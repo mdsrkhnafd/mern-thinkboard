@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 import { connectDB } from "./config/db.js";
 import noteRoutes from "./routes/noteRoutes.js";
 import ratelimiter from "./middleware/rateLimiter.js";
@@ -9,25 +10,28 @@ dotenv.config();
 
 const PORT = process.env.PORT || 5001;
 const app = express();
+const __dirname = path.resolve();
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-  }),
-);
-app.use(ratelimiter);
 
-// simple and custom logger middleware
-// app.use((req, res, next) => {
-//   console.log(`Req method is ${req.method} & Req URL is ${req.url}`);
-//   next();
-// });
+if (process.env.NODE_ENV !== "production") {
+  app.use(cors({ origin: "http://localhost:5173" }));
+}
 
-// Routes
+// Routes (rate limiter sirf API par)
+app.use("/api", ratelimiter);
 app.use("/api/notes", noteRoutes);
+
+// Serve frontend in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+  app.get("/{*splat}", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+  });
+}
 
 // Start server ONLY after MongoDB connects
 const startServer = async () => {
