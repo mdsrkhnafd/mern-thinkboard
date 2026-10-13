@@ -2,7 +2,7 @@ import Note from "../models/Note.js";
 import asyncHandler from "../middleware/asyncHandler.js";
 
 export const getNotes = asyncHandler(async (req, res) => {
-  const notes = await Note.find().sort({ createdAt: -1 });
+  const notes = await Note.find({ user: req.user._id }).sort({ createdAt: -1 });
   res.status(200).json(notes);
 });
 
@@ -16,6 +16,7 @@ export const createNote = asyncHandler(async (req, res) => {
   const note = await Note.create({
     title: title.trim(),
     content: content.trim(),
+    user: req.user._id,
   });
   res.status(201).json(note);
 });
@@ -27,10 +28,11 @@ export const updateNote = asyncHandler(async (req, res) => {
   if (title !== undefined) updates.title = title.trim();
   if (content !== undefined) updates.content = content.trim();
 
-  const updatedNote = await Note.findByIdAndUpdate(req.params.id, updates, {
-    new: true,
-    runValidators: true,
-  });
+  const updatedNote = await Note.findOneAndUpdate(
+    { _id: req.params.id, user: req.user._id },
+    updates,
+    { new: true, runValidators: true },
+  );
 
   if (!updatedNote) {
     return res.status(404).json({ message: "Note not found" });
@@ -40,7 +42,10 @@ export const updateNote = asyncHandler(async (req, res) => {
 });
 
 export const deleteNote = asyncHandler(async (req, res) => {
-  const deletedNote = await Note.findByIdAndDelete(req.params.id);
+  const deletedNote = await Note.findOneAndDelete({
+    _id: req.params.id,
+    user: req.user._id,
+  });
 
   if (!deletedNote) {
     return res.status(404).json({ message: "Note not found" });
@@ -50,7 +55,7 @@ export const deleteNote = asyncHandler(async (req, res) => {
 });
 
 export const getNoteById = asyncHandler(async (req, res) => {
-  const note = await Note.findById(req.params.id);
+  const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
 
   if (!note) {
     return res.status(404).json({ message: "Note not found" });

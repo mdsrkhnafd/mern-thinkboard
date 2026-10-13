@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { connectDB } from "./config/db.js";
 import noteRoutes from "./routes/noteRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import ratelimiter from "./middleware/rateLimiter.js";
 
 dotenv.config();
@@ -22,6 +23,7 @@ if (process.env.NODE_ENV !== "production") {
 
 // Routes (rate limiter sirf API par)
 app.use("/api", ratelimiter);
+app.use("/api/auth", authRoutes); // /api/notes wali line se pehle
 app.use("/api/notes", noteRoutes);
 
 // Serve frontend in production
